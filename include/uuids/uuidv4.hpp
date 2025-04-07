@@ -9,6 +9,10 @@
 
 namespace uuids::inline v1
 {
+
+namespace details
+{
+
 template <typename T>
 concept RandomNumberEngine = requires(T& eng) {
     typename T::result_type;
@@ -36,6 +40,9 @@ struct alignas(16) uuid_bytes final
         std::copy(bytes.begin(), bytes.end(), data.begin());
     }
 };
+
+} // namespace details
+
 } // namespace uuids::inline v1
 
 #endif /* End of include guard: UUIDV4_HPP_xir2zk */
