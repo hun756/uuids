@@ -252,6 +252,57 @@ private:
 };
 
 } // namespace detail
+
+template <typename PRNG = std::mt19937_64>
+class basic_uuid final
+{
+public:
+    using bytes_type = std::array<std::uint8_t, 16>;
+
+    static constexpr std::size_t size() noexcept { return 16; }
+
+    constexpr basic_uuid() noexcept = default;
+
+    explicit constexpr basic_uuid(const bytes_type& bytes) noexcept : data_{bytes} {}
+
+    explicit constexpr basic_uuid(std::span<const std::uint8_t, 16> bytes) noexcept : data_{bytes}
+    {
+    }
+
+    explicit constexpr basic_uuid(detail::uuid_bytes bytes) noexcept : data_{std::move(bytes)} {}
+
+    [[nodiscard]] constexpr const bytes_type& bytes() const noexcept { return data_.data; }
+
+    [[nodiscard]] constexpr std::span<const std::uint8_t, 16> span() const noexcept
+    {
+        return std::span<const std::uint8_t, 16>(data_.data);
+    }
+
+    [[nodiscard]] std::string str() const
+    {
+        static constexpr std::string_view hex = "0123456789abcdef";
+        std::string result(36, '\0');
+
+        std::size_t i = 0;
+        for (std::size_t j = 0; j < 16; ++j)
+        {
+            if (j == 4 || j == 6 || j == 8 || j == 10)
+            {
+                result[i++] = '-';
+            }
+            result[i++] = hex[data_.data[j] >> 4];
+            result[i++] = hex[data_.data[j] & 0x0F];
+        }
+
+        return result;
+    }
+
+    [[nodiscard]] constexpr auto operator<=>(const basic_uuid&) const noexcept = default;
+
+private:
+    detail::uuid_bytes data_{};
+};
+
 } // namespace uuids::inline v1
 
 #endif /* End of include guard: UUIDV4_HPP_xir2zk */
