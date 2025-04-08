@@ -303,6 +303,35 @@ private:
     detail::uuid_bytes data_{};
 };
 
+template <typename PRNG = std::mt19937_64>
+class basic_uuid_generator final
+{
+public:
+    using uuid_type = basic_uuid<PRNG>;
+    using result_type = detail::uuid_bytes;
+
+    constexpr basic_uuid_generator() noexcept = default;
+
+    explicit constexpr basic_uuid_generator(typename PRNG::result_type seed) noexcept : gen_(seed)
+    {
+    }
+
+    [[nodiscard]] uuid_type operator()() noexcept { return uuid_type(gen_()); }
+
+private:
+    detail::optimized_generator<PRNG> gen_;
+};
+
+using uuid = basic_uuid<>;
+using uuid_generator = basic_uuid_generator<>;
+
+template <typename CharT, typename Traits, typename PRNG>
+inline std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os,
+                                                     const basic_uuid<PRNG>& uuid)
+{
+    return os << uuid.str();
+}
+
 } // namespace uuids::inline v1
 
 #endif /* End of include guard: UUIDV4_HPP_xir2zk */
