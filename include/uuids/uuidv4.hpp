@@ -334,4 +334,37 @@ inline std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, T
 
 } // namespace uuids::inline v1
 
+namespace std
+{
+
+template <typename PRNG>
+struct hash<uuids::basic_uuid<PRNG>>
+{
+    [[nodiscard]] std::size_t operator()(const uuids::basic_uuid<PRNG>& uuid) const noexcept
+    {
+        const auto& bytes = uuid.bytes();
+        if constexpr (sizeof(std::size_t) == 8)
+        {
+            std::uint64_t h1, h2;
+            std::memcpy(&h1, bytes.data(), 8);
+            std::memcpy(&h2, bytes.data() + 8, 8);
+            return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6) + (h1 >> 2));
+        }
+        else
+        {
+            std::uint32_t h = 0;
+            for (std::size_t i = 0; i < 16; i += 4)
+            {
+                std::uint32_t k;
+                std::memcpy(&k, bytes.data() + i, 4);
+                h ^= k;
+                h *= 0x1b873593U;
+            }
+            return h;
+        }
+    }
+};
+
+} // namespace std
+
 #endif /* End of include guard: UUIDV4_HPP_xir2zk */
