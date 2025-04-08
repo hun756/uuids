@@ -1,4 +1,3 @@
-// generate inlude guard with random 6 char engin UUIDV4_HPP_[random6char]
 #ifndef UUIDV4_HPP_xir2zk
 #define UUIDV4_HPP_xir2zk
 
