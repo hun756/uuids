@@ -5,6 +5,8 @@
 #include <array>
 #include <bit>
 #include <concepts>
+#include <cstdint>
+#include <random>
 #include <span>
 
 #include <simd/feature_check.hpp>
@@ -135,6 +137,118 @@ public:
 #endif
         return data;
     }
+};
+
+template <typename PRNG = std::mt19937_64>
+    requires RandomNumberEngine<PRNG>
+class optimized_generator final
+{
+public:
+    using result_type = uuid_bytes;
+
+    optimized_generator() noexcept : rng_(std::random_device{}()), use_hw_rng_(setup_hw_rng()) {}
+
+    explicit optimized_generator(typename PRNG::result_type seed) noexcept
+        : rng_(seed), use_hw_rng_(setup_hw_rng())
+    {
+    }
+
+    [[nodiscard]] result_type operator()() noexcept
+    {
+        return use_hw_rng_ ? generate_hw() : generate_sw();
+    }
+
+private:
+    [[nodiscard]] static bool setup_hw_rng() noexcept
+    {
+        return simd::has_feature(simd::Feature::RDRND) || simd::has_feature(simd::Feature::RDSEED);
+    }
+
+    [[nodiscard]] result_type generate_hw() noexcept
+    {
+        uuid_bytes uuid;
+        std::span<std::uint8_t, 16> uuid_span(uuid.data);
+
+        bool used_hw_rng = false;
+
+        if (hardware_rng::rdrand_supported())
+        {
+            std::uint64_t v1 = hardware_rng::rdrand();
+            std::uint64_t v2 = hardware_rng::rdrand();
+
+            if (v1 != 0 || v2 != 0)
+            {
+                std::memcpy(uuid_span.data(), &v1, 8);
+                std::memcpy(uuid_span.subspan(8).data(), &v2, 8);
+                used_hw_rng = true;
+            }
+        }
+
+        if (!used_hw_rng && hardware_rng::rdseed_supported())
+        {
+            std::uint64_t v1 = hardware_rng::rdseed();
+            std::uint64_t v2 = hardware_rng::rdseed();
+
+            if (v1 != 0 || v2 != 0)
+            {
+                std::memcpy(uuid_span.data(), &v1, 8);
+                std::memcpy(uuid_span.subspan(8).data(), &v2, 8);
+                used_hw_rng = true;
+            }
+        }
+
+        if (!used_hw_rng)
+        {
+            return generate_sw();
+        }
+
+#if defined(__x86_64__) || defined(_M_X64)
+        if (hardware_rng::aesni_supported() && simd::compile_time::has<simd::Feature::AES>())
+        {
+            __m128i data = _mm_load_si128(reinterpret_cast<const __m128i*>(uuid.data.data()));
+            __m128i key = _mm_set_epi64x(0x1b873593, 0x9e3779b9);
+            data = hardware_rng::aesni_enc(key, data);
+            _mm_store_si128(reinterpret_cast<__m128i*>(uuid.data.data()), data);
+        }
+#endif
+
+        uuid.data[6] = (uuid.data[6] & 0x0F) | 0x40;
+        uuid.data[8] = (uuid.data[8] & 0x3F) | 0x80;
+
+        return uuid;
+    }
+
+    [[nodiscard]] result_type generate_sw() noexcept
+    {
+        uuid_bytes uuid;
+        if constexpr (sizeof(typename PRNG::result_type) == 8)
+        {
+            const auto v1 = rng_();
+            const auto v2 = rng_();
+            std::span<std::uint8_t, 16> uuid_span(uuid.data);
+            std::memcpy(uuid_span.data(), &v1, 8);
+            std::memcpy(uuid_span.subspan(8).data(), &v2, 8);
+        }
+        else
+        {
+            for (std::size_t i = 0; i < 16; i += sizeof(typename PRNG::result_type))
+            {
+                const auto value = rng_();
+                std::memcpy(uuid.data.data() + i, &value, sizeof(typename PRNG::result_type));
+            }
+        }
+
+        uuid.data[6] = (uuid.data[6] & 0x0F) | 0x40;
+        uuid.data[8] = (uuid.data[8] & 0x3F) | 0x80;
+
+        return uuid;
+    }
+
+    PRNG rng_;
+    bool use_hw_rng_;
+
+    static_assert(std::is_trivially_copyable_v<PRNG>);
+    static_assert(std::is_trivially_destructible_v<PRNG>);
 };
 
 } // namespace detail
