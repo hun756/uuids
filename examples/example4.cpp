@@ -88,21 +88,22 @@ void benchmark_custom_prng()
         std::chrono::duration_cast<std::chrono::milliseconds>(custom_end - std_end).count();
 
     std::cout << "Standard UUID generation: " << NUM_UUIDS << " UUIDs in " << std_duration << "ms ("
-              << static_cast<double>(NUM_UUIDS) / std_duration * 1000 << " UUIDs/second)"
-              << std::endl;
+              << static_cast<double>(NUM_UUIDS) / static_cast<double>(std_duration) * 1000
+              << " UUIDs/second)" << std::endl;
 
     std::cout << "Custom PRNG UUID generation: " << NUM_UUIDS << " UUIDs in " << custom_duration
-              << "ms (" << static_cast<double>(NUM_UUIDS) / custom_duration * 1000
+              << "ms ("
+              << static_cast<double>(NUM_UUIDS) / static_cast<double>(custom_duration) * 1000
               << " UUIDs/second)" << std::endl;
 
     std::cout << "\nStandard UUID samples:" << std::endl;
-    for (int i = 0; i < 3; ++i)
+    for (size_t i = 0; i < 3; ++i)
     {
         std::cout << std_uuids[i] << std::endl;
     }
 
     std::cout << "\nCustom UUID samples:" << std::endl;
-    for (int i = 0; i < 3; ++i)
+    for (size_t i = 0; i < 3; ++i)
     {
         std::cout << custom_uuids[i] << std::endl;
     }
