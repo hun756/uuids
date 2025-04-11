@@ -37,6 +37,11 @@ foreach(example_source ${EXAMPLE_SOURCES})
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-march=native>
     )
 
+    # Add O3 optimization for GCC and Clang
+    target_compile_options(${example_name} PRIVATE
+        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-O3>
+    )
+
     # If sanitizers are enabled in the main build, also enable them for examples
     # This helps catch memory/undefined behavior issues in example code too
     if(ENABLE_SANITIZERS)

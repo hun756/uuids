@@ -43,3 +43,16 @@ Whether you're building high-throughput distributed systems, performance-sensiti
 - **🔧 Highly Configurable**: Template-based architecture supports custom PRNG engines and configuration
 - **📊 Thread-Safe**: Lock-free design ensures thread safety without performance penalties
 - **✅ Fully RFC 4122 Compliant**: Generates standard-compliant UUIDs (version 4, variant 1)
+
+## Benchmarks
+
+Performance comparison against leading UUID libraries (lower is better):
+
+| Library                     | Time to generate 10M UUIDs | Relative Performance |
+| --------------------------- | -------------------------- | -------------------- |
+| **UUIDv4 (HW accelerated)** | **40 ms**                  | **1.0x (baseline)**  |
+| UUIDv4 (SW fallback)        | 102 ms                     | 2.5x slower          |
+| boost::uuid                 | 736 ms                     | 18.4x slower         |
+| libuuid                     | -                          | -                    |
+
+*Benchmarked on Ryzen 7 7800x3d, compiled with clang 19.1.6 with -O3 optimization (hw accelaration with -march=native flag)*
