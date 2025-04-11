@@ -56,3 +56,31 @@ Performance comparison against leading UUID libraries (lower is better):
 | libuuid                     | -                          | -                    |
 
 *Benchmarked on Ryzen 7 7800x3d, compiled with clang 19.1.6 with -O3 optimization (hw accelaration with -march=native flag)*
+
+## Integration
+
+### Basic Integration (Header-Only)
+
+Simply include the header in your project:
+
+```cpp
+#include <uuids/uuidv4.hpp>
+```
+
+### Package Managers
+
+#### CMake FetchContent
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+  uuidv4
+  GIT_REPOSITORY https://github.com/korbolkoinc/uuids.git
+  GIT_TAG v1.0.0
+)
+
+FetchContent_MakeAvailable(uuidv4)
+
+target_link_libraries(your_target PRIVATE uuidv4::uuidv4)
+```
