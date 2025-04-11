@@ -1,6 +1,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <functional>
 #include <future>
 #include <iomanip>
@@ -221,26 +222,26 @@ bool simulate_database_load()
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (int t = 0; t < NUM_THREADS; ++t)
+    for (size_t t = 0; t < NUM_THREADS; ++t)
     {
         futures.push_back(std::async(
             std::launch::async,
-            [&db, t, &thread_gens, NUM_ITEMS, NUM_THREADS]() -> bool
+            [&db, t, &thread_gens]() -> bool
             {
                 try
                 {
                     auto& thread_gen = thread_gens[t];
-                    std::uniform_int_distribution<int> dist;
+                    std::uniform_int_distribution<size_t> dist;
 
-                    const int items_per_thread = NUM_ITEMS / NUM_THREADS;
-                    const int start_idx = t * items_per_thread;
-                    const int end_idx =
+                    const size_t items_per_thread = NUM_ITEMS / NUM_THREADS;
+                    const size_t start_idx = t * items_per_thread;
+                    const size_t end_idx =
                         (t == NUM_THREADS - 1) ? NUM_ITEMS : start_idx + items_per_thread;
 
                     std::vector<uuids::uuid> ids;
                     ids.reserve(end_idx - start_idx);
 
-                    for (int i = start_idx; i < end_idx; ++i)
+                    for (size_t i = start_idx; i < end_idx; ++i)
                     {
                         auto value = "Item-" + std::to_string(i);
                         ids.push_back(db.insert(value));
@@ -250,7 +251,8 @@ bool simulate_database_load()
                     for (int i = 0; i < updates && !ids.empty(); ++i)
                     {
                         size_t idx = dist(thread_gen) % ids.size();
-                        auto value = "Updated-" + std::to_string(start_idx + i);
+                        auto value =
+                            "Updated-" + std::to_string(start_idx + static_cast<size_t>(i));
                         db.update(ids[idx], value);
                     }
 
